@@ -44,7 +44,7 @@ d3.gantt = function () {
     var container = "body";
 
     var tickFormat = "%H:%M";
-
+    //var tickFormat = "%d";
     /**
      * Create new SVG object and render chart in it
      * @param {object} tasks - array of tasks
@@ -250,7 +250,9 @@ d3.gantt = function () {
 
     //var xAxis = d3.svg.axis().scale(x).orient("bottom").tickFormat(d3.time.format(tickFormat)).tickSubdivide(true)
      //   .tickSize(8).tickPadding(8);
-    var xAxis = d3.svg.axis().scale(x).orient("bottom").tickSize(0);
+
+    // tickSize sagt nur wie groß die striche sein sollen an der achse
+    var xAxis = d3.svg.axis().scale(x).orient("bottom").tickSize(8);
 
     var yAxis = d3.svg.axis().scale(y).orient("left").tickSize(0);
 
@@ -273,15 +275,14 @@ d3.gantt = function () {
     };
 
     var initAxis = function () {
-        //x = d3.time.scale().domain([timeDomainStart, timeDomainEnd]).range([0, width]).clamp(true);
         x = d3.time.scale().domain([timeDomainStart, timeDomainEnd]).range([0, width]).clamp(true);
+        //x = d3.scaleLinear().domain([0, 75]).range([0, width]).clamp(true);
         y = d3.scale.ordinal().domain(taskTypes).rangeRoundBands([0, height - margin.top - margin.bottom], .1);
         xAxis = d3.svg.axis().scale(x).orient("bottom").tickFormat(d3.time.format(tickFormat)).tickSubdivide(true)
             .tickSize(8).tickPadding(8);
 
         yAxis = d3.svg.axis().scale(y).orient("left").tickSize(0);
     };
-
 
     return gantt;
 };

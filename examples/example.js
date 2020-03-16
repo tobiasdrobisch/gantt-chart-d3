@@ -2,6 +2,7 @@ example();
 
 function example() {
 /*
+    TODO: read tsv file and create array "tasks" to work with in gantt
    // var tasks = [];
 
     // length will be dependend on number of parameters
@@ -39,7 +40,7 @@ function example() {
 //console.log(moves_to);
 
 */
-
+// small working sample with static array "tasks"
 var tasks = [
     {"startDate":0,"endDate":1,"taskName":"0","status":"0"},
     {"startDate":0,"endDate":1,"taskName":"1","status":"2"},
@@ -47,9 +48,9 @@ var tasks = [
     {"startDate":2,"endDate":4,"taskName":"3","status":"1"},
     {"startDate":1,"endDate":4,"taskName":"0","status":"6"},
     {"startDate":4,"endDate":60,"taskName":"0","status":"0"},
-    {"startDate":34,"endDate":86,"taskName":"58","status":"3"}
+    {"startDate":34,"endDate":70,"taskName":"52","status":"3"}
 ];
-    tasks.push(    {"startDate":69,"endDate":86,"taskName":"55","status":"3"}
+    tasks.push(    {"startDate":50,"endDate":70,"taskName":"55","status":"3"}
     );
 console.log(tasks[0]);
     console.log(tasks);
@@ -67,9 +68,10 @@ var taskStatus = {
     "7" : "node-7",
 };
 
-// tasknames should be pushed dynamically
+// TODO: tasknames should be dependend on tsv file
 var taskNames = [ "0", "1", "2", "3", "4", "5", "6", "7","8","9","10", "50", "51", "52" ];
 
+// TODO: are following lines used somewhere?
 /*
 tasks.sort(function(a, b) {
     return a.endDate - b.endDate;
@@ -80,10 +82,12 @@ tasks.sort(function(a, b) {
 });
 var minDate = tasks[0].startDate;
 */
-var format = "0";
+
+var format = "%H:%M";
+//var format = "%d";
 
 var gantt = d3.gantt().taskTypes(taskNames).taskStatus(taskStatus).tickFormat(format);
 gantt(tasks);
 
-};
+}
 
