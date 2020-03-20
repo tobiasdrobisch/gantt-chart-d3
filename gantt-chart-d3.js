@@ -35,6 +35,8 @@ d3.gantt = function () {
         left: 150
     };
     var timeDomainStart = d3.time.day.offset(new Date(), -3);
+    console.log("test");
+    console.log(timeDomainStart = d3.time.day.offset(new Date(), -3));
     var timeDomainEnd = d3.time.hour.offset(new Date(), +3);
     var timeDomainMode = FIT_TIME_DOMAIN_MODE;// fixed or fit
     var taskTypes = [];

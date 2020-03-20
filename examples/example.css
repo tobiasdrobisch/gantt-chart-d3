@@ -20,7 +20,7 @@ html,body,#wrapper {
 }
 
 .node-1 {
-	fill: #CC0000;
+	fill: #cc0000;
 }
 
 .node-2 {
@@ -28,20 +28,20 @@ html,body,#wrapper {
 }
 
 .node-3 {
-	fill: #33b5e5;
+	fill: #b4e56b;
 }
 
 .node-4 {
 	fill: #ffbb33;
 }
 .node-5 {
-	fill: #ffbb33;
+	fill: #f540ff;
 }
 .node-6 {
-	fill: #ffbb33;
+	fill: #aa18ff;
 }
 .node-7 {
-	fill: #ffbb33;
+	fill: #16ffa9;
 }
 /*
 #forkme_banner {
