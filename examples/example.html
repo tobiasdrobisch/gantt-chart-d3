@@ -13,5 +13,35 @@
 	<script type="text/javascript" src="../lib/d3/d3.v3.min.js"></script>
 	<script type="text/javascript" src="../gantt-chart-d3.js"></script>
 	<script type="text/javascript" src="example.js"></script>
+	<script type="text/javascript" src="../jshashtable/jshashtable.js"></script>
+	<script type="text/javascript" src="../jshashtable/jshashset.js"></script>
+	<script type="text/javascript">
+		var dinosaurs = new HashSet();
+
+		dinosaurs.add("Triceratops");
+		dinosaurs.add("Diplodocus");
+		dinosaurs.add("Stegosaurus");
+
+		alert( dinosaurs.values.join(",") );
+		/* Triceratops,Diplodocus,Stegosaurus */
+	</script>
+	</div>
+	<form>
+		<div class="btn-group btn-group-toggle" data-toggle="buttons">
+			<label class="btn btn-secondary active">
+				<input type="radio" name="options" id="option1" value="relocstats.sorted" checked> relocstats.sorted
+			</label>
+			<label class="btn btn-secondary">
+				<input type="radio" name="options" id="option2" value="mf-rect-100-8x4.10kth-parameter.combined.sorted"> mf-rect-100-8x4.10kth-parameter.combined.sorted
+			</label>
+			<label class="btn btn-secondary">
+				<input type="radio" name="options" id="option3" value="mf-rect-100-8x4.1kth-parameter.combined.sorted"> mf-rect-100-8x4.1kth-parameter.combined.sorted
+			</label>
+		</div>
+	</form>
+	<!--<button type="button" name="load_data" id="show_data" class="btn btn-info" onclick="changeShowHide()">Show Data</button>-->
+	<input type="text" id="myVal" placeholder="Choose Parameter">
+	<button type="button" name="run_process" id="run_process" class="btn btn-info" onclick="reading()" >Run</button>
+	</div>
 </body>
 </html>

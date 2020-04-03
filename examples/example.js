@@ -1,10 +1,8 @@
-reading();
+// reading();
 
-function plotting(tasks, taskNames) {
-    console.log("tasknames");
-    console.log(taskNames);
+function plotting(tasks, plottedParameter,maxRounds) {
     // mapping: each node has a color (example.css)
-    var taskStatus = {
+    var nodeColors = {
         "0" : "node-0",
         "1" : "node-1",
         "2" : "node-2",
@@ -13,8 +11,8 @@ function plotting(tasks, taskNames) {
         "5" : "node-5",
         "6" : "node-6",
         "7" : "node-7",
+        "8" : "undefined"
     };
-
 
 // TODO: are following lines used somewhere?
     /*
@@ -28,48 +26,90 @@ function plotting(tasks, taskNames) {
     var minDate = tasks[0].startDate;
     */
 
-    var format = "%H:%M";
+    //var format = "%H:%M";
 //var format = "%d";
 
-    var gantt = d3.gantt().taskTypes(taskNames).taskStatus(taskStatus).tickFormat(format);
+    var gantt = d3.gantt().taskTypes(plottedParameter).taskStatus(nodeColors).maxRounds(maxRounds);
+    //var gantt = d3.gantt().taskTypes(plottedParameter).taskStatus(nodeColors).tickFormat(format);
+
     gantt(tasks);
 
 }
 
 function reading() {
-
+    var dataFile = "";
+    var stringParameters = document.getElementById("myVal").value.replace(/\s/g, "");
+    var coffee = document.forms[0];
+    for (i = 0; i < coffee.length; i++) {
+        if (coffee[i].checked) {
+            //console.log(coffee[i].checked);
+            dataFile = "../" + coffee[i].value + ".tsv";
+        }
+    }
+    console.log(dataFile);
     var tasks = [];
     var plottedParameter = [];
     var maxRounds = 0;
+    var minRounds = 0;
+    var helpArray = [];
+    var parameterArray = [];
+    var helpArray2 = [];
+    helpArray = stringParameters.split(",");
+    for(var i = 0; i<helpArray.length; i++) {
+        helpArray2 = helpArray[i].split('-');
+
+        if (helpArray2.length === 1) {
+            parameterArray.push(parseInt(helpArray2));
+            //testSet.add(parseInt(helpArray2));
+        } else {
+            var lowEnd = Number(helpArray2[0]);
+            var highEnd = Number(helpArray2[1]);
+            for (var j = lowEnd; j <= highEnd; j++) {
+                parameterArray.push(j);
+                //testSet.add(j);
+            }
+        }
+    }
+    var testSet = new HashSet(parameterArray);
+    //var hash = new HashSet();
+
+    //console.log(parameterArray);
+    console.log(testSet);
 
     // TODO: length will be dependend on number of parameters
     // array of latest endTime of each  parameter
-    (last_drawn = []).length = 1000;
+    (last_drawn = []).length = 12000000;
     last_drawn.fill(0);
     // array of last node position of each parameter
-    (moves_to = []).length = 1000;
-    moves_to.fill(0);
+    (moves_to = []).length = 12000000;
+    moves_to.fill("8");
 
-    d3.tsv("../relocstats.sorted.tsv", function (data) {
-        console.log("maxRounds");
+
+    d3.tsv(dataFile, function (data) {
+
         maxRounds = data[data.length -1].time;
-        console.log(maxRounds);
+        minRounds = data[0].time;
+        console.log("maxRounds: " + maxRounds);
+        console.log("minrounds: " + minRounds);
         data.forEach(function (d) {
             d.time = +d.time;
-            d.pararm = +d.param;
-            if (d.param > 0 && d.param < 200) {
-                if (d.time === 0) {
-                    // TODO: plottedParameter should be dependend on tsv file
-                    plottedParameter.push(d.param);
-                }
-                // TODO: better to look maxRounds up in tsv file last line since it is sorted?? look at line 55
+            //d.param = +d.param;
+            // if (d.param > 1 && d.param < 22 && d.time < 60) {
+                if ( testSet.has(parseInt(d.param))) { //parameterArray.includes(parseInt(d.param))
 
-                if ( plottedParameter.includes(d.param)) {
-                    /*
-                    if(maxRounds < d.time) {
-                        maxRounds = d.time;
-                    }
-                     */
+                if ( !plottedParameter.includes(d.param)) {
+                    plottedParameter.push(d.param);
+
+                    tasks.push({
+                        "startDate": minRounds,
+                        "endDate": parseInt(d.time),
+                        "taskName": d.param,
+                        "status": "8"
+                    });
+
+
+                    moves_to[d.param] = d.target;
+                } else {
                     tasks.push({
                         "startDate": parseInt(last_drawn[d.param]),
                         "endDate": parseInt(d.time),
@@ -77,7 +117,6 @@ function reading() {
                         "status": moves_to[d.param]
                     });
                     moves_to[d.param] = d.target;
-
                 }
 
 
@@ -97,9 +136,9 @@ function reading() {
                 "status": moves_to[plottedParameter[i]]
             });        }
 
-
-        console.log(tasks);
-        return plotting(tasks, plottedParameter);
+        plottedParameter.sort();
+        //console.log(tasks);
+        return plotting(tasks, plottedParameter, maxRounds);
 
         //console.log(data);
     });
@@ -107,7 +146,7 @@ function reading() {
     //tasks[0].startDate = 2;
     //tasks[0].taskName = "4";
     //tasks[0].status = "4";
-    console.log(tasks);
+    //console.log(tasks);
 //console.log(moves_to);
 
 /*

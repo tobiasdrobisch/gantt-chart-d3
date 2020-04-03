@@ -43,6 +43,9 @@ html,body,#wrapper {
 .node-7 {
 	fill: #16ffa9;
 }
+.undefined {
+	fill: white;
+}
 /*
 #forkme_banner {
 	display: block;

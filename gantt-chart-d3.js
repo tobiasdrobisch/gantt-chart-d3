@@ -25,8 +25,6 @@ function descFunction (d, i) {
  */
 
 d3.gantt = function () {
-    var FIT_TIME_DOMAIN_MODE = "fit";
-    var FIXED_TIME_DOMAIN_MODE = "fixed";
 
     var margin = {
         top: 20,
@@ -34,19 +32,15 @@ d3.gantt = function () {
         bottom: 20,
         left: 150
     };
-    var timeDomainStart = d3.time.day.offset(new Date(), -3);
-    console.log("test");
-    console.log(timeDomainStart = d3.time.day.offset(new Date(), -3));
-    var timeDomainEnd = d3.time.hour.offset(new Date(), +3);
-    var timeDomainMode = FIT_TIME_DOMAIN_MODE;// fixed or fit
+
     var taskTypes = [];
     var taskStatus = [];
+    //var minRounds = 0;
+    var maxRounds = 0;
     var height = document.body.clientHeight - margin.top - margin.bottom - 5;
     var width = document.body.clientWidth - margin.right - margin.left - 5;
     var container = "body";
 
-    var tickFormat = "%H:%M";
-    //var tickFormat = "%d";
     /**
      * Create new SVG object and render chart in it
      * @param {object} tasks - array of tasks
@@ -54,7 +48,6 @@ d3.gantt = function () {
      */
     function gantt(tasks) {
 
-        initTimeDomain(tasks);
         initAxis();
 
         var svg = d3.select(container)
@@ -99,7 +92,8 @@ d3.gantt = function () {
 
     var classNameFunction = function(d) {
         if (taskStatus[d.status] == null) {
-            return "bar";
+            // return "bar"; -> hatte das noch irgendeinen sinn?
+            return "node";
         }
         return taskStatus[d.status];
     }
@@ -109,6 +103,7 @@ d3.gantt = function () {
      * @param {object} tasks - list of tasks (old and new ones)
      * @returns {gantt}
      */
+    /*
     gantt.redraw = function (tasks) {
 
         initTimeDomain(tasks);
@@ -150,7 +145,7 @@ d3.gantt = function () {
         svg.select(".y").transition().call(yAxis);
 
         return gantt;
-    };
+    };*/
 
     gantt.margin = function (value) {
         if (!arguments.length)
@@ -160,25 +155,7 @@ d3.gantt = function () {
         width = width - margin.left - margin.right;
         return gantt;
     };
-
-    gantt.timeDomain = function (value) {
-        if (!arguments.length)
-            return [timeDomainStart, timeDomainEnd];
-        timeDomainStart = +value[0], timeDomainEnd = +value[1];
-        return gantt;
-    };
-
-    /**
-     * @param {string} value  - The value can be "fit" - the domain fits the data or "fixed" - fixed domain.
-     */
-    gantt.timeDomainMode = function (value) {
-        if (!arguments.length)
-            return timeDomainMode;
-        timeDomainMode = value;
-        return gantt;
-
-    };
-
+    
     /**
      * @param {object} value - array of strings with possible task types
      * @returns {*}
@@ -201,6 +178,15 @@ d3.gantt = function () {
         return gantt;
     };
 
+    /** own set for variable maxRounds */
+
+    gantt.maxRounds = function (value) {
+        if (!arguments.length)
+            return maxRounds;
+        maxRounds = value;
+        return gantt;
+    };
+
     gantt.width = function (value) {
         if (!arguments.length)
             return width + margin.left + margin.right;
@@ -212,13 +198,6 @@ d3.gantt = function () {
         if (!arguments.length)
             return height;
         height = +value;
-        return gantt;
-    };
-
-    gantt.tickFormat = function (value) {
-        if (!arguments.length)
-            return tickFormat;
-        tickFormat = value;
         return gantt;
     };
 
@@ -246,7 +225,8 @@ d3.gantt = function () {
         return "translate(" + x(d.startDate) + "," + y(d.taskName) + ")";
     };
 
-    var x = d3.time.scale().domain([timeDomainStart, timeDomainEnd]).range([0, width]).clamp(true);
+    //var x = d3.time.scale().domain([timeDomainStart, timeDomainEnd]).range([0, width]).clamp(true);
+    var x = d3.scale.linear().domain([0, maxRounds]).range([0, width]).clamp(true);
 
     var y = d3.scale.ordinal().domain(taskTypes).rangeRoundBands([0, height - margin.top - margin.bottom], .1);
 
@@ -258,32 +238,21 @@ d3.gantt = function () {
 
     var yAxis = d3.svg.axis().scale(y).orient("left").tickSize(0);
 
-    var initTimeDomain = function (tasks) {
-        if (timeDomainMode === FIT_TIME_DOMAIN_MODE) {
-            if (tasks === undefined || tasks.length < 1) {
-                timeDomainStart = d3.time.day.offset(new Date(), -3);
-                timeDomainEnd = d3.time.hour.offset(new Date(), +3);
-                return;
-            }
-            tasks.sort(function (a, b) {
-                return a.endDate - b.endDate;
-            });
-            timeDomainEnd = tasks[tasks.length - 1].endDate;
-            tasks.sort(function (a, b) {
-                return a.startDate - b.startDate;
-            });
-            timeDomainStart = tasks[0].startDate;
-        }
-    };
-
     var initAxis = function () {
-        x = d3.time.scale().domain([timeDomainStart, timeDomainEnd]).range([0, width]).clamp(true);
-        //x = d3.scaleLinear().domain([0, 75]).range([0, width]).clamp(true);
-        y = d3.scale.ordinal().domain(taskTypes).rangeRoundBands([0, height - margin.top - margin.bottom], .1);
-        xAxis = d3.svg.axis().scale(x).orient("bottom").tickFormat(d3.time.format(tickFormat)).tickSubdivide(true)
-            .tickSize(8).tickPadding(8);
+        //x = d3.time.scale().domain([timeDomainStart, timeDomainEnd]).range([0, width]).clamp(true);
+        x = d3.scale.linear().domain([0, maxRounds]).range([0, width]).clamp(true);
 
-        yAxis = d3.svg.axis().scale(y).orient("left").tickSize(0);
+        y = d3.scale.ordinal().domain(taskTypes).rangeRoundBands([0, height - margin.top - margin.bottom], .1);
+        //xAxis = d3.svg.axis().scale(x).orient("bottom").tickFormat(d3.time.format(tickFormat)).tickSubdivide(true)
+        //    .tickSize(8).tickPadding(8);
+        xAxis = d3.svg.axis().scale(x).orient("bottom").tickSubdivide(true)
+            .tickSize(8).tickPadding(8);
+        // orient("left") / right/ bottom -> ausrichtung der achsen und der beschriftung
+        // ticksize sagt wie groß die striche der ticks sein sollen
+        // tickpadding schiebt die label weg von der achse
+        // domain gibt die dargestellten grenzen an, [-2, 2] zeigt achse von -2 bis 2
+        // range sagt wo genau das dargestellt werden soll, 1. wert verschiebt linke seite, 2. rechte seite (+, -)
+        yAxis = d3.svg.axis().scale(y).orient("left").tickSize(0).tickPadding(8);
     };
 
     return gantt;
