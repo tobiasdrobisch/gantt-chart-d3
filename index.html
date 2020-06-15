@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Lapse in Action</title>
+	<link rel="stylesheet" href="https://unpkg.com/purecss@2.0.1/build/pure-min.css" integrity="sha384-QkSsJi6SGgWv5LAx1TdvIDRf8TW5Ui4NVKqDDlK1wY2eKioo7wvYIJvGWFQSFE4U" crossorigin="anonymous">
+	<script type="text/javascript" src="lib/d3/d3.v3.min.js"></script> <!-- d3 -->
+	<link type="text/css" href="style.css" rel="stylesheet" />
+	<script type="text/javascript" src="lib/gantt-chart-d3.js"></script>
+	<script type="text/javascript" src="main.js"></script>
+	<script type="text/javascript" src="lib/bits.js"></script> <!--bitArray -->
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.0.1/spin.min.js'></script> <!--loading spinner -->
+</head>
+<body>
+<h1 align="center">Lapse in Action</h1>
+<div align="center">
+	<form class="pure-form lapse-parameters" onsubmit="return false;">
+		  <label for="chooseUseCase">ML Task:</label>
+			<select id="chooseUseCase"></select>
+
+      <label for="inputParameters">Parameters:</label>
+      <input type="text" id="inputParameters" placeholder="100k-220k">
+
+      <label for="initialisingTime">Hide data loading</label>
+		  <input type="checkbox" id="initialisingTime" name="initialisingTime" Checked>
+
+		  <button type="submit" id="run_process" class="button-secondary pure-button"  onclick="runMain()" style="margin-left: 2em;">Plot parameter locations</button>
+	</form>
+</div>
+<div id="firstDemo" style="height:600px">
+	<svg id="svgFirstDemo"></svg>
+</div>
+<!-- generate dropdown elements -->
+<script>
+	window.onload = function() {
+		createSVG(1000);
+		triggerDropdown();
+	};
+
+	var triggerDropdown = function() {
+		//default first Use Case
+		useCase = allUseCases[0];
+		document.getElementById('inputParameters').value = useCase.defPar;
+		var sel = document.getElementById('chooseUseCase');
+		for (var i = 0; i < allUseCases.length; i++) {
+			var val = allUseCases[i].name;
+			var opt = document.createElement('option');
+			opt.innerHTML = val;
+			opt.value = String(i);
+			sel.appendChild(opt);
+		}
+	};
+</script>
+
+<!-- fill input text field with default Parameters -->
+<script>
+	let changedText = document.getElementById('inputParameters');
+	// default Parameters depends on selected UseCase
+	function listQ(){
+		useCase = allUseCases[Number(this.value)];
+		changedText.value = useCase.defPar;
+		changedText.placeholder = useCase.defPar;
+	}
+	document.getElementById("chooseUseCase").onchange = listQ;
+</script>
+
+<!-- 	button "Run" should be really disabled, not working yet
+		problem: probably have to put enabling of button into d3 library	-->
+<script>
+	function runMain() {
+		if (document.getElementById("run_process").disabled) {console.log("button disabled");} else {
+			document.getElementById("run_process").disabled = true;
+			document.getElementById("loadingSpinner").style.display = "block";
+			// removes plotted chart
+			d3.select("svg").remove();
+			main();
+		}
+		return 1;
+	}
+</script>
+<div id="loadingSpinner" style="display: none;"></div>
+<script type="text/javascript" src="index_live_test.js"></script>
+
+<div id="vis">
+	<button id="play-button" onclick=runMainTwo() style="margin-left: 2em; margin-top:2em;">Play </button>
+	<button id="pause-button" onclick=pause() style="margin-left: 2em; margin-top:2em;">Pause</button>
+	<label for="inputSpeed">Speed:</label>
+	<input type="text" id="inputSpeed" placeholder="1" value="1">
+</div>
+<div id = "divID">
+	<svg id="svgID"></svg>
+	<div id="myProgress">
+		<div id="myBar">0%</div>
+	</div>
+</div>
+
+
+</body>
+</html>
