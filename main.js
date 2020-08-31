@@ -1,15 +1,4 @@
 
-// MAX_PARAM: setting highest parameter as size of arrays
-var MAX_PARAM = 12e6+1;
-// prepared UseCases with default Parameters automatically bind into dropdown tool
-var allUseCases = [
-    {name: "Matrix Factorization on 10m x 1m matrix, rank 100, 8x4 workers, 0.01% of parameters", file: "mf-rect-100-8x4.10kth-parameter.combined.sorted", defPar:"0m-11m"},
-    {name: "ComplEx-4000 on dbpedia500, 8x4 workers, 0.1% of parameters", file: "complex-4000-8x4.1kth-parameter.combined.sorted", defPar:"0-500k"},
-    // {name: "ComplEx-4000 on dbpedia500, 8x4 (0.01% of parameters) " , file: "complex-4000-8x4.10kth-parameter.combined.sorted", defPar:"0-500k"},
-];
-// selected useCase
-var useCase;
-
 // plotting: take arguments and start plotting with d3 library
 // mapping: each node has a color (style.css)
 function plotting(tasks, plottedParameter,maxRounds,residencies) {
@@ -35,39 +24,80 @@ function plotting(tasks, plottedParameter,maxRounds,residencies) {
 
 }
 
-/**** chooseParameters
+/**** chooseParamsForGantt
  * TextInput: choosing parameters for plotting
  * possible writing:
  * spaces will be ignored; 1st number < 2nd number; 2,3 -> select: 2 and 3; 2-5 -> select: [2,3,4,5]
  * numbers can appear multiple times and also overlap, doesn't matter
  * m is getting replaced by 000000, k by 000 and all by 0-MAX_PARAM
- * example: 0,12-17, 23-25,47,14 -> [0,12,13,14,15,16,17,23,24,25,47]
+ * example of selection: 0,12-17, 23-25,47,14 -> [0,12,13,14,15,16,17,23,24,25,47]
+ *
+ * Return: chosenParamesBA: all possible parameters of text input are set true
  * ****/
 
-function chooseParameters() {
+//TODO: ? 1.5m is not 1 500 000, yet. would be 1.5
 
+function chooseParamsForGantt(path) {
+
+    // console.log("chooseParams path: " + string);
+
+    // measuring duration of this function
+    //console.time("chooseParamsForGantt");
+
+    let everyXthParam = Number(document.getElementById("everyXthParameter").value);
+    let paramList = [];
+
+    // prepare input as BitArray with all chosen params true
     let allParametersToPlot = [];
     let helpArray = [];
     let stringParameters = "";
-    const chosenParametersBitArray = new BitArray(MAX_PARAM);
-    let helpString = document.getElementById("inputParameters").value.replace(/\s/g, "");
-    if (helpString.includes('all')) {stringParameters = "0-" + MAX_PARAM} else {
-        let inputString = helpString.replace(/k/g,'000');
+    const chosenParamsBA = new BitArray(MAX_PARAM);
+    if (path.includes('all')) {stringParameters = "0-" + MAX_PARAM} else {
+        let inputString = path.replace(/k/g,'000');
         stringParameters = inputString.replace(/m/g,'000000'); }
     allParametersToPlot = stringParameters.split(",");
     for(let i = 0; i<allParametersToPlot.length; i++) {
         helpArray = allParametersToPlot[i].split('-');
         if (helpArray.length === 1) {
-            chosenParametersBitArray.set(parseInt(helpArray[0]), true);
+            chosenParamsBA.set(Number(helpArray[0]), true);
         } else {
             let lowEnd = Number(helpArray[0]);
             let highEnd = Number(helpArray[1]);
             for (let j = lowEnd; j <= highEnd; j++) {
-                chosenParametersBitArray.set(j, true);
+                chosenParamsBA.set(j, true);
             }
         }
     }
-    return chosenParametersBitArray;
+
+    // store all existing params of dataset into paramList
+    //let numParams = 0;
+    let existingParamsBool = {};
+    d3.tsv("data/" + useCase.file + ".tsv", function (data) {
+        let biggestParam = 0;
+        data.forEach(function (d, i) {
+            if (Number(d.param) > biggestParam)
+                biggestParam = Number(d.param);
+            if (!existingParamsBool[d.param]) {
+                existingParamsBool[d.param] = 1;
+                paramList.push(d.param);
+            }
+        });
+        paramList.sort((a, b) => a - b);
+        //numParams = paramList.length;
+        console.log("biggest Param: " + biggestParam);
+        // filter: only every xth param to plot stays true beginning with first element
+        for (let i = 0; i < paramList.length; i++) {
+            if (i % everyXthParam !== 0) {
+                chosenParamsBA.set(paramList[i], false);
+                //numParams--;
+            }
+        }
+        //console.log("Number of plotted Parameters : " + numParams);
+
+        //console.timeEnd("chooseParamsForGantt");  // TODO: Where is the correct line to stop recording time?
+    });
+
+    return chosenParamsBA;
 }
 
 function plotWithInitialTime(chosenParametersBitArray) {
@@ -110,7 +140,7 @@ function plotWithInitialTime(chosenParametersBitArray) {
                         "startDate": parseInt(last_drawn[d.param]),
                         "endDate": parseInt(d.time),
                         "taskName": d.param,
-                        "status": String(moves_to[d.param])
+                        "color": String(moves_to[d.param])
                     });
                     last_drawn[d.param] = d.time;
                 } else {
@@ -118,7 +148,7 @@ function plotWithInitialTime(chosenParametersBitArray) {
                         "startDate": parseInt(last_drawn[d.param]),
                         "endDate": parseInt(d.time),
                         "taskName": d.param,
-                        "status": String(moves_to[d.param])
+                        "color": String(moves_to[d.param])
                     });
                     last_drawn[d.param] = d.time;
                 }
@@ -131,7 +161,7 @@ function plotWithInitialTime(chosenParametersBitArray) {
                 "startDate": parseInt(last_drawn[plottedParametersStringArray[i]]),
                 "endDate": parseInt(maxRounds),
                 "taskName": plottedParametersStringArray[i],
-                "status": String(moves_to[plottedParametersStringArray[i]])
+                "color": String(moves_to[plottedParametersStringArray[i]])
             });
         }
         plottedParametersStringArray.sort(function(a, b){ return a - b; });
@@ -179,12 +209,13 @@ function plotWithoutInitialTime(chosenParametersBitArray) {
                 } else {
                     if (firstMove === 0) {
                         firstMove = d.time * 0.995;
+                        console.log("test firstMove: " + firstMove);
                     }
                     plottedTasks.push({
                         "startDate": parseInt(last_drawn[d.param]),
                         "endDate": parseInt(d.time) - firstMove,
                         "taskName": d.param,
-                        "status": String(moves_to[d.param])
+                        "color": String(moves_to[d.param])
                     });
                     last_drawn[d.param] = d.time - firstMove;
                 }
@@ -198,7 +229,7 @@ function plotWithoutInitialTime(chosenParametersBitArray) {
                 "startDate": parseInt(last_drawn[plottedParametersStringArray[i]]),
                 "endDate": parseInt(maxRounds),
                 "taskName": plottedParametersStringArray[i],
-                "status": String(moves_to[plottedParametersStringArray[i]])
+                "color": String(moves_to[plottedParametersStringArray[i]])
             });
         }
 
@@ -212,19 +243,122 @@ function plotWithoutInitialTime(chosenParametersBitArray) {
 }
 
 /**** main()
- * get parameters to plot and start process with(out) initial time
+ * get parameters to plot gantt and start process with(out) hiding Data loading
  * @returns {number} 0
  */
 
 function main() {
+
     // which Parameters shall be plotted
-    const selectedParametersBitArray = chooseParameters();
-    // initialTime enabled/disabled?
-    let checkBoxInitialisingTime = !document.getElementById("initialisingTime").checked;
-    if (checkBoxInitialisingTime) {
-        plotWithInitialTime(selectedParametersBitArray);
+    let string = document.getElementById("inputParameters").value.replace(/\s/g, "");
+    const paramsBA = chooseParamsForGantt(string);
+    // make sure tooltip is getting deleted
+    d3.selectAll('.tooltip').remove();
+
+    let hideDataLoading = document.getElementById("hideDataLoading").checked;
+    if (!hideDataLoading) {
+        plotWithInitialTime(paramsBA);
     } else {
-        plotWithoutInitialTime(selectedParametersBitArray);
+        plotWithoutInitialTime(paramsBA);
     }
     return 0;
 }
+
+/* older version of choosing Parameters
+function chooseParameters(string) {
+    console.log("chooseParameters String: " + string);
+    let allParametersToPlot = [];
+    let helpArray = [];
+    let stringParameters = "";
+    const chosenParametersBitArray = new BitArray(MAX_PARAM);
+    if (string.includes('all')) {stringParameters = "0-" + MAX_PARAM} else {
+        let inputString = string.replace(/k/g,'000');
+        stringParameters = inputString.replace(/m/g,'000000'); }
+    allParametersToPlot = stringParameters.split(",");
+    for(let i = 0; i<allParametersToPlot.length; i++) {
+        helpArray = allParametersToPlot[i].split('-');
+        if (helpArray.length === 1) {
+            chosenParametersBitArray.set(parseInt(helpArray[0]), true);
+        } else {
+            let lowEnd = Number(helpArray[0]);
+            let highEnd = Number(helpArray[1]);
+            for (let j = lowEnd; j <= highEnd; j++) {
+                chosenParametersBitArray.set(j, true);
+            }
+        }
+    }
+    console.timeEnd("choose Parameters");
+    return chosenParametersBitArray;
+}*/
+/*
+function chooseParamsForGantt(string) {
+
+    console.time("chooseParamsForGantt");
+    let everyXParam = Number(document.getElementById("everyXthParameter").value);
+    console.log("chooseParameters String: " + string);
+    let paramList = [];
+    let countMal = 0;
+    let testObject = {};
+    let testArray = [];
+    let allParametersToPlot = [];
+    let helpArray = [];
+    let stringParameters = "";
+    const chosenParamsBA = new BitArray(MAX_PARAM);
+    if (string.includes('all')) {stringParameters = "0-" + MAX_PARAM} else {
+        let inputString = string.replace(/k/g,'000');
+        stringParameters = inputString.replace(/m/g,'000000'); }
+    allParametersToPlot = stringParameters.split(",");
+    for(let i = 0; i<allParametersToPlot.length; i++) {
+        helpArray = allParametersToPlot[i].split('-');
+        if (helpArray.length === 1) {
+            chosenParamsBA.set(parseInt(helpArray[0]), true);
+        } else {
+            let lowEnd = Number(helpArray[0]);
+            let highEnd = Number(helpArray[1]);
+            for (let j = lowEnd; j <= highEnd; j++) {
+                chosenParametersBitArray.set(j, true);
+            }
+        }
+    }
+
+    d3.tsv("data/" + useCase.file + ".tsv", function (data) {
+        data.forEach(function (d, i) {
+            if (!testObject[d.param]) {
+                testObject[d.param] = 1;
+                testArray.push(d.param);
+            }
+            /* if (chosenParametersBitArray.get(d.param) === true) {
+                 if (!paramList.includes(d.param)) {
+                     countMal++;
+                     paramList.push(d.param);
+                 }
+             }*/
+        //});
+        //console.log("testarraylength: " + testArray.length);
+        //paramList.sort((a, b) => a - b);
+        //testArray.sort((a, b) => a - b);
+
+        //console.log("paramlistlength: " + paramList.length);
+        /*for (let i = 0; i < paramList.length; i++) {
+            if (i % everyXParam === 0) {
+                chosenParametersBitArray.set(paramList[i], true);
+            } else {
+                countMal--;
+                chosenParametersBitArray.set(paramList[i], false)
+            }
+        }*//*
+        for (let i = 0; i < testArray.length; i++) {
+            if (i % everyXParam === 0) {
+                chosenParamsBA.set(testArray[i], true);
+            } else {
+                countMal--;
+                chosenParamsBA.set(testArray[i], false)
+            }
+        }
+        console.log("countMal : " + countMal);
+        console.timeEnd("chooseParamsForGantt");
+        console.log("oder eher das hier?");
+    });
+    console.log("das hier?");
+    return chosenParamsBA;
+}*/

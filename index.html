@@ -13,87 +13,218 @@
 </head>
 <body>
 <h1 align="center">Lapse in Action</h1>
-<div align="center">
+<div align="center" style="margin-bottom: 2em;">
 	<form class="pure-form lapse-parameters" onsubmit="return false;">
-		  <label for="chooseUseCase">ML Task:</label>
-			<select id="chooseUseCase"></select>
+		  <label for="selectUseCase">ML Task:</label>
+			<select id="selectUseCase"></select>
 
       <label for="inputParameters">Parameters:</label>
       <input type="text" id="inputParameters" placeholder="100k-220k">
 
-      <label for="initialisingTime">Hide data loading</label>
-		  <input type="checkbox" id="initialisingTime" name="initialisingTime" Checked>
-
-		  <button type="submit" id="run_process" class="button-secondary pure-button"  onclick="runMain()" style="margin-left: 2em;">Plot parameter locations</button>
+      <label for="hideDataLoading">Hide data loading</label>
+		  <input type="checkbox" id="hideDataLoading" name="hideDataLoading" Checked>
 	</form>
 </div>
-<div id="firstDemo" style="height:600px">
-	<svg id="svgFirstDemo"></svg>
-</div>
-<!-- generate dropdown elements -->
+
 <script>
-	window.onload = function() {
-		createSVG(1000);
-		triggerDropdown();
+	window.onload = async function() {
+		displaySeconds = document.getElementById("displaySeconds");		// upper demo
+		divPB = document.getElementById("pbRectangle"); 						// upper demo progressBar
+		let divGridID = d3.select("#divID").append("svg").attr("id", "gridID");
+
+
+		// create dropdown and select first useCase
+		createDropdown();
+		let numParam = await fileScanning();
+		createSVG(numParam.length);
+		let DataSetWindowOnload;
+
+		let totalTime;
+
+		//console.log(DataSetWindowOnload);
+
+		var progressBarWrapper = document.getElementById("divProgressBar");
+		var myBar = d3.select("#myBarID").attr("width", "1000px").attr("height", "30px");
+
+		/** progress bar reinklicken versuch **/
+		progressBarWrapper.addEventListener('click', async function(e) {
+			d3.tsv("data/" + useCase.file + ".tsv", function (data) {
+				totalTime = data[data.length - 1].time; //aktuelle zeit durch total testTime ist der prozentsatz zu dem die bar gefüllt sein soll
+				console.log("totalTime: " +  totalTime);
+			});
+
+			await resetButton();
+			console.log("clientX: " + e.clientX +
+					" - clientY: " + e.clientY);
+			divPB.style.x = (e.offsetX/1000.0)*100.0 + "%";
+
+			console.log("e.offsetX:"  + e.offsetX);
+			console.log("e.offsetX undund:"  + e.offsetX/1000.0);
+
+
+			let positionTimeTest = ((e.offsetX)/1000.0)*totalTime;
+
+			d3.tsv("data/" + useCase.file + ".tsv", function (data) {
+				let j = 0;
+				if (1) {
+					while (+data[j].time < positionTimeTest) {
+						//console.log(typeof(+data[j].param));
+						if (parameterList.includes(data[j].param)) {
+							//console.log("wie oft hier drin");
+
+							// paint square if param exists
+							document.querySelector("#rect" + parameterList.indexOf(data[j].param)).setAttribute("style", "fill:" + nodeColors2[+data[j].target] + "; stroke: black;");
+						}
+						j++;
+					}
+				}
+				/*
+				data.forEach(function (d, i) {
+					console.log(d.param);
+					console.log(parameterList);
+					if (+d.time <= positionTimeTest) {
+						document.querySelector("#rect" + parameterList.indexOf(+d.param)).setAttribute("style", "fill:" + nodeColors2[d.target] + "; stroke: black;");
+					}
+
+					//DataSetWindowOnload = data;
+
+				});*/
+			});
+
+			// MACHT WOHL SINN STATT START HIER RESUME ZU MACHEN!!!!!
+
+
+			console.log("totalTIme: " + totalTime);
+			console.log("zeitpunkt: " + positionTimeTest);
+			console.log("position" + ((e.clientX - 75)/1000.0)); // mal 100 für die prozente wahrscheinlich?!
+
+			//hm, jetzt muss ich wohl variablen schreiben, die den funktionen mit übergeben werden?
+			// ok, alex wollte wohl dass dann die demo resetted wird und dann da hingesprungen wird...
+			// hideDataloading nicht vergessen
+			/** Da könnte man theoretisch die progressBar so machen, dass der beim Start dann auch an die Stelle springt!!!**/
+			// man könnte einen strich machen an der stelle wo HideDataLoading losgeht / losgehen würde :)
+
+			// eventuell einen laufenden run pausieren um dann alles zu speichern und dann zu resume gehen?
+			// also erstmal die aktuelle position nehmen, dann die einstellungen nehmen, die für den plot gelten
+			// dann berechnen bis zu welcher zeit zurück, oder vorgespult werden muss und alles bis dahin zeichnen
+			// dann automatisch play?
+
+		}, false);
+
 	};
 
-	var triggerDropdown = function() {
-		//default first Use Case
+
+	/**
+	 * create dropdown menu for UseCases and select first UseCase as default
+	 **/
+
+	let createDropdown = function() {
 		useCase = allUseCases[0];
 		document.getElementById('inputParameters').value = useCase.defPar;
-		var sel = document.getElementById('chooseUseCase');
+		let select = document.getElementById('selectUseCase');
 		for (var i = 0; i < allUseCases.length; i++) {
 			var val = allUseCases[i].name;
 			var opt = document.createElement('option');
 			opt.innerHTML = val;
 			opt.value = String(i);
-			sel.appendChild(opt);
+			select.appendChild(opt);
 		}
-	};
-</script>
 
-<!-- fill input text field with default Parameters -->
-<script>
+	};
+	<!-- fill input text field with default Parameters -->
+
 	let changedText = document.getElementById('inputParameters');
+
 	// default Parameters depends on selected UseCase
-	function listQ(){
+	async function dropdownClick(){
+		d3.select('body').select("#svgFirstDemo").remove();
 		useCase = allUseCases[Number(this.value)];
 		changedText.value = useCase.defPar;
 		changedText.placeholder = useCase.defPar;
-	}
-	document.getElementById("chooseUseCase").onchange = listQ;
-</script>
+		resetButton();
 
-<!-- 	button "Run" should be really disabled, not working yet
-		problem: probably have to put enabling of button into d3 library	-->
-<script>
+	}
+
+	/**
+	 * 	changing state of HideDataLoading resets upper demo
+	 */
+	function resetDemo() {
+		resetButton();
+	}
+
+	document.getElementById("selectUseCase").onchange = dropdownClick;
+	document.getElementById("hideDataLoading").onchange = resetDemo;
+
+
+	/**
+	 * gantt chart
+	 * @returns {number}
+	 */
+	// 	button "Run" should be really disabled, not working yet
+	//	problem: probably have to put enabling of button into d3 library	-->
 	function runMain() {
 		if (document.getElementById("run_process").disabled) {console.log("button disabled");} else {
 			document.getElementById("run_process").disabled = true;
 			document.getElementById("loadingSpinner").style.display = "block";
-			// removes plotted chart
-			d3.select("svg").remove();
+
 			main();
 		}
 		return 1;
 	}
+
+	const node = document.getElementById("inputParameters");
+	console.log("node: " + node);
+	node.addEventListener("keyup", function(event) {
+		if (event.key === "Enter") {
+			// Do work
+			//if (notStarted === true)
+			resetButton();
+			playButton();
+			console.log("node keypress: " + node);
+
+		}
+	});
+
 </script>
+
 <div id="loadingSpinner" style="display: none;"></div>
-<script type="text/javascript" src="index_live_test.js"></script>
+<script type="text/javascript" src="grid-chart.js"></script>
 
-<div id="vis">
-	<button id="play-button" onclick=runMainTwo() style="margin-left: 2em; margin-top:2em;">Play </button>
-	<button id="pause-button" onclick=pause() style="margin-left: 2em; margin-top:2em;">Pause</button>
-	<label for="inputSpeed">Speed:</label>
-	<input type="text" id="inputSpeed" placeholder="1" value="1">
+<div id="vis" align="center">
+	<form class="pure-form lapse-parameters" onsubmit="return false;">
+		<button id="play-button" class="button-secondary pure-button" onclick=playButton(); style="width: 90px;">Play </button>
+
+		<label for="inputSpeed">Speed:</label>
+		<input type="text" id="inputSpeed" placeholder="1" value="1" style="text-align: right; width: 100px;">
+
+		<button id="reset-button" class="button-secondary pure-button" onclick=resetButton(); style="width: 90px; margin-left: 2em;">Reset </button>
+		<span> <!-- aus irgendeineme grund geht das auf die nächste zeile....-->
+			<div type="text" style="display: inline-block; width: 100px; background-color:white;">Time:</div>
+			<div type="text" id="displaySeconds"  style="display: inline-block; width: 100px; text-align: right; background-color:white;">0 sec</div>
+		</span>
+		<label for="repeatMode">Repeat</label>
+		<input type="checkbox" id="repeatMode" name="repeatMode">
+
+	</form>
 </div>
-<div id = "divID">
-	<svg id="svgID"></svg>
-	<div id="myProgress">
-		<div id="myBar">0%</div>
-	</div>
+<!-- visual section of 2nd Demo -->
+<div id = "divID" style="margin-left: auto; margin-right: auto; width: 1000px; margin-top: 2em;">
+	<!--<svg id="gridID"></svg>-->
 </div>
-
-
+<div id="divProgressBar" style="margin-left: auto; margin-right: auto; width: 1000px;">
+	<svg id = "myBarID">
+		<rect id="pbRectangle"/>
+	</svg>
+</div>
+<div align="center" style="margin-top: 2em;">
+	<form class="pure-form lapse-parameters" onsubmit="return false;">
+		<label for="everyXthParameter">Plot every </label>
+		<input type="text" id="everyXthParameter" style="width: 80px; text-align: right; background-color:white;" value="10"> th Parameter
+				<button type="submit" id="run_process" class="button-secondary pure-button"  onclick="runMain()" style="margin-left: 2em;">Plot parameter locations</button>
+	</form>
+</div>
+<div id="firstDemo" align="center">
+	<svg id="svgFirstDemo"></svg>
+</div>
 </body>
 </html>
